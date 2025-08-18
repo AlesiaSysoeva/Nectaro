@@ -95,3 +95,6 @@ public class RegistrationTest {
        createAccountBtn.click();
     }
 }
+
+
+

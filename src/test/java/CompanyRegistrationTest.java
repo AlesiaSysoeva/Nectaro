@@ -83,6 +83,31 @@ public class CompanyRegistrationTest {
         }
     }
 
+    private void toggleVuetifyCheckboxByLabel(WebDriver browser, WebElement label) {
+        WebElement container = label.findElement(By.xpath("preceding-sibling::div[contains(@class,'v-input--selection-controls__input')]"));
+        WebElement input = container.findElement(By.xpath(".//input[@type='checkbox']"));
+        ((JavascriptExecutor) browser).executeScript("arguments[0].scrollIntoView({block:'center'});", container);
+
+        // Try JS click on the container first
+        ((JavascriptExecutor) browser).executeScript("arguments[0].click();", container);
+        try { new WebDriverWait(browser, Duration.ofSeconds(2)).until(d -> isCheckboxChecked(d, input)); } catch (Exception ignored) {}
+
+        // If ripple overlay interferes, disable it and retry
+        if (!isCheckboxChecked(browser, input)) {
+            try {
+                WebElement ripple = container.findElement(By.cssSelector(".v-input--selection-controls__ripple"));
+                ((JavascriptExecutor) browser).executeScript("arguments[0].style.pointerEvents='none'; arguments[0].style.display='none';", ripple);
+            } catch (Exception ignored) {}
+            ((JavascriptExecutor) browser).executeScript("arguments[0].click();", container);
+            try { new WebDriverWait(browser, Duration.ofSeconds(2)).until(d -> isCheckboxChecked(d, input)); } catch (Exception ignored) {}
+        }
+
+        // Last fallback: set input state directly
+        if (!isCheckboxChecked(browser, input)) {
+            clickCheckboxSafely(browser, input);
+        }
+    }
+
 
     @Test
     public void successfulCompanyRegistrationTest() {
@@ -158,19 +183,11 @@ public class CompanyRegistrationTest {
 
             WebElement marketingLabel = browser.findElement(MARKETING_CHECKBOX);
             scroller.scrollToElement(marketingLabel).perform();
-            String marketingFor = marketingLabel.getAttribute("for");
-            WebElement marketingInput = marketingFor != null && !marketingFor.isEmpty()
-                    ? browser.findElement(By.id(marketingFor))
-                    : marketingLabel.findElement(By.xpath("preceding-sibling::div[contains(@class,'v-input--selection-controls__input')]/input[@type='checkbox']"));
-            clickCheckboxSafely(browser, marketingInput);
+            toggleVuetifyCheckboxByLabel(browser, marketingLabel);
 
             WebElement policyLabel = browser.findElement(POLICY_CHECKBOX);
             scroller.scrollToElement(policyLabel).perform();
-            String policyFor = policyLabel.getAttribute("for");
-            WebElement policyInput = policyFor != null && !policyFor.isEmpty()
-                    ? browser.findElement(By.id(policyFor))
-                    : policyLabel.findElement(By.xpath("preceding-sibling::div[contains(@class,'v-input--selection-controls__input')]/input[@type='checkbox']"));
-            clickCheckboxSafely(browser, policyInput);
+            toggleVuetifyCheckboxByLabel(browser, policyLabel);
 
             // Submit
             WebElement createAccountBtn = browser.findElement(CREATE_ACCOUNT_BTN);

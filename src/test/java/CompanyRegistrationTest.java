@@ -43,23 +43,43 @@ public class CompanyRegistrationTest {
         throw new NoSuchElementException("None of the candidate locators were visible");
     }
 
+    private boolean isCheckboxChecked(WebDriver browser, WebElement input) {
+        try {
+            Object result = ((JavascriptExecutor) browser).executeScript("return !!arguments[0].checked;", input);
+            if (result instanceof Boolean) {
+                return (Boolean) result;
+            }
+        } catch (Exception ignored) {
+        }
+        return input.isSelected();
+    }
+
     private void clickCheckboxSafely(WebDriver browser, WebElement input) {
         ((JavascriptExecutor) browser).executeScript(
                 "arguments[0].scrollIntoView({block:'center', inline:'nearest'});", input);
-        try {
-            ((JavascriptExecutor) browser).executeScript("arguments[0].click();", input);
-        } catch (Exception ignored) {
-        }
-        if (!input.isSelected()) {
-            try {
-                input.sendKeys(Keys.SPACE);
-            } catch (Exception ignored) {
-            }
-        }
-        if (!input.isSelected()) {
+
+        // Prefer setting the state directly to avoid ripple overlays/interception
+        if (!isCheckboxChecked(browser, input)) {
             ((JavascriptExecutor) browser).executeScript(
                     "if(!arguments[0].checked){arguments[0].checked=true; arguments[0].dispatchEvent(new Event('change',{bubbles:true})); arguments[0].dispatchEvent(new Event('input',{bubbles:true}));}",
                     input);
+        }
+
+        // Wait briefly for the framework to update state
+        try {
+            new WebDriverWait(browser, Duration.ofSeconds(2))
+                    .until(d -> isCheckboxChecked(d, input));
+        } catch (Exception ignored) {
+        }
+
+        // As a final fallback, try JS click once, then SPACE once, only if still unchecked
+        if (!isCheckboxChecked(browser, input)) {
+            try { ((JavascriptExecutor) browser).executeScript("arguments[0].click();", input); } catch (Exception ignored) {}
+            try { new WebDriverWait(browser, Duration.ofSeconds(1)).until(d -> isCheckboxChecked(d, input)); } catch (Exception ignored) {}
+        }
+        if (!isCheckboxChecked(browser, input)) {
+            try { input.sendKeys(Keys.SPACE); } catch (Exception ignored) {}
+            try { new WebDriverWait(browser, Duration.ofSeconds(1)).until(d -> isCheckboxChecked(d, input)); } catch (Exception ignored) {}
         }
     }
 

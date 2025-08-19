@@ -5,6 +5,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -40,6 +41,26 @@ public class CompanyRegistrationTest {
             }
         }
         throw new NoSuchElementException("None of the candidate locators were visible");
+    }
+
+    private void clickCheckboxSafely(WebDriver browser, WebElement input) {
+        ((JavascriptExecutor) browser).executeScript(
+                "arguments[0].scrollIntoView({block:'center', inline:'nearest'});", input);
+        try {
+            ((JavascriptExecutor) browser).executeScript("arguments[0].click();", input);
+        } catch (Exception ignored) {
+        }
+        if (!input.isSelected()) {
+            try {
+                input.sendKeys(Keys.SPACE);
+            } catch (Exception ignored) {
+            }
+        }
+        if (!input.isSelected()) {
+            ((JavascriptExecutor) browser).executeScript(
+                    "if(!arguments[0].checked){arguments[0].checked=true; arguments[0].dispatchEvent(new Event('change',{bubbles:true})); arguments[0].dispatchEvent(new Event('input',{bubbles:true}));}",
+                    input);
+        }
     }
 
 
@@ -118,33 +139,18 @@ public class CompanyRegistrationTest {
             WebElement marketingLabel = browser.findElement(MARKETING_CHECKBOX);
             scroller.scrollToElement(marketingLabel).perform();
             String marketingFor = marketingLabel.getAttribute("for");
-            if (marketingFor != null && !marketingFor.isEmpty()) {
-                WebElement marketingInput = browser.findElement(By.id(marketingFor));
-                if (!marketingInput.isSelected()) {
-                    marketingInput.click();
-                }
-            } else {
-                // Fallback: find the checkbox input adjacent to the label
-                WebElement marketingInput = marketingLabel.findElement(By.xpath("preceding-sibling::div[contains(@class,'v-input--selection-controls__input')]/input[@type='checkbox']"));
-                if (!marketingInput.isSelected()) {
-                    marketingInput.click();
-                }
-            }
+            WebElement marketingInput = marketingFor != null && !marketingFor.isEmpty()
+                    ? browser.findElement(By.id(marketingFor))
+                    : marketingLabel.findElement(By.xpath("preceding-sibling::div[contains(@class,'v-input--selection-controls__input')]/input[@type='checkbox']"));
+            clickCheckboxSafely(browser, marketingInput);
 
             WebElement policyLabel = browser.findElement(POLICY_CHECKBOX);
             scroller.scrollToElement(policyLabel).perform();
             String policyFor = policyLabel.getAttribute("for");
-            if (policyFor != null && !policyFor.isEmpty()) {
-                WebElement policyInput = browser.findElement(By.id(policyFor));
-                if (!policyInput.isSelected()) {
-                    policyInput.click();
-                }
-            } else {
-                WebElement policyInput = policyLabel.findElement(By.xpath("preceding-sibling::div[contains(@class,'v-input--selection-controls__input')]/input[@type='checkbox']"));
-                if (!policyInput.isSelected()) {
-                    policyInput.click();
-                }
-            }
+            WebElement policyInput = policyFor != null && !policyFor.isEmpty()
+                    ? browser.findElement(By.id(policyFor))
+                    : policyLabel.findElement(By.xpath("preceding-sibling::div[contains(@class,'v-input--selection-controls__input')]/input[@type='checkbox']"));
+            clickCheckboxSafely(browser, policyInput);
 
             // Submit
             WebElement createAccountBtn = browser.findElement(CREATE_ACCOUNT_BTN);

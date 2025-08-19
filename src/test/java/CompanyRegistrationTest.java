@@ -17,17 +17,17 @@ import java.util.Date;
 public class CompanyRegistrationTest {
     private final By ACCEPT_COOKIES_BTN = By.id("cookiescript_accept");
 
-    private final By COMPANY_NAME = By.xpath(".//label[contains(., 'Company name') or contains(., 'Company Name')]/parent::*//input");
-    private final By FIRST_NAME = By.xpath(".//label[contains(., 'First name') or contains(., 'First Name')]/parent::*//input");
-    private final By FIRST_NAME_ATTRS = By.xpath("//input[@name='firstName' or @name='first_name' or @autocomplete='given-name' or contains(translate(@aria-label,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'first name') or contains(translate(@placeholder,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'first name') or contains(translate(@id,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'firstname')]");
-    private final By LAST_NAME = By.xpath(".//label[text()='Last name']/parent::*//input");
-    private final By LAST_NAME_ATTRS = By.xpath("//input[@name='lastName' or @name='last_name' or @autocomplete='family-name' or contains(translate(@aria-label,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'last name') or contains(translate(@placeholder,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'last name') or contains(translate(@id,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'lastname')]");
-    private final By COUNTRY_OF_RESIDENCE = By.xpath(".//label[text()='Country of residence']/parent::*//input");
+    private final By COMPANY_NAME = By.xpath(".//label[normalize-space()='Company name']/parent::*//input");
+    private final By FIRST_NAME = By.xpath(".//label[normalize-space()='Representative first name']/parent::*//input");
+    private final By FIRST_NAME_ATTRS = By.xpath("//input[@name='firstName' or @name='first_name' or @autocomplete='given-name' or contains(translate(@aria-label,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'representative first name') or contains(translate(@placeholder,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'representative first name') or contains(translate(@id,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'firstname')]");
+    private final By LAST_NAME = By.xpath(".//label[normalize-space()='Representative last name']/parent::*//input");
+    private final By LAST_NAME_ATTRS = By.xpath("//input[@name='lastName' or @name='last_name' or @autocomplete='family-name' or contains(translate(@aria-label,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'representative last name') or contains(translate(@placeholder,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'representative last name') or contains(translate(@id,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'lastname')]");
+    private final By COUNTRY_OF_RESIDENCE = By.xpath(".//label[normalize-space()='Country of registration']/parent::*//input");
     private final By COUNTRY_AUSTRIA = By.xpath(".//div[@title = 'Austria']");
     private final By EMAIL = By.xpath(".//input[@type = 'email']");
     private final By PASSWORD = By.xpath(".//input[@type = 'password']");
-    private final By MARKETING_CHECKBOX = By.xpath(".//span[@class = 'text-body-m text-lg-body']");
-    private final By POLICY_CHECKBOX = By.xpath(".//span[@class = 'text-left text-body-m text-lg-body']");
+    private final By MARKETING_CHECKBOX = By.xpath(".//label[.//span[contains(., 'Agree to receive marketing communications')]]");
+    private final By POLICY_CHECKBOX = By.xpath(".//label[.//span[contains(., 'By proceeding with registration I agree')]]");
     private final By CREATE_ACCOUNT_BTN = By.xpath(".//button[@type = 'submit']");
 
     private final String NAME_PREFIX = "Test-";
@@ -118,10 +118,10 @@ public class CompanyRegistrationTest {
             WebElement marketingCheckbox = browser.findElement(MARKETING_CHECKBOX);
             scroller.scrollToElement(marketingCheckbox).perform();
             try {
-                marketingCheckbox.click();
+                marketingCheckbox.click(); // click label to toggle underlying input
             } catch (Exception e) {
                 // Sometimes the label span is not directly clickable; click the nearest input instead
-                marketingCheckbox.findElement(By.xpath("ancestor::label//input|preceding::input[1]"))
+                marketingCheckbox.findElement(By.xpath(".//preceding::input[@type='checkbox'][1] | .//input[@type='checkbox']"))
                         .click();
             }
 
@@ -130,7 +130,7 @@ public class CompanyRegistrationTest {
             try {
                 policyCheckbox.click();
             } catch (Exception e) {
-                policyCheckbox.findElement(By.xpath("ancestor::label//input|preceding::input[1]"))
+                policyCheckbox.findElement(By.xpath(".//preceding::input[@type='checkbox'][1] | .//input[@type='checkbox']"))
                         .click();
             }
 

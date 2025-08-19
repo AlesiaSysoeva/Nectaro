@@ -3,6 +3,8 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -17,7 +19,9 @@ public class CompanyRegistrationTest {
 
     private final By COMPANY_NAME = By.xpath(".//label[contains(., 'Company name') or contains(., 'Company Name')]/parent::*//input");
     private final By FIRST_NAME = By.xpath(".//label[contains(., 'First name') or contains(., 'First Name')]/parent::*//input");
+    private final By FIRST_NAME_ATTRS = By.xpath("//input[@name='firstName' or @name='first_name' or @autocomplete='given-name' or contains(translate(@aria-label,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'first name') or contains(translate(@placeholder,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'first name') or contains(translate(@id,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'firstname')]");
     private final By LAST_NAME = By.xpath(".//label[text()='Last name']/parent::*//input");
+    private final By LAST_NAME_ATTRS = By.xpath("//input[@name='lastName' or @name='last_name' or @autocomplete='family-name' or contains(translate(@aria-label,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'last name') or contains(translate(@placeholder,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'last name') or contains(translate(@id,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'lastname')]");
     private final By COUNTRY_OF_RESIDENCE = By.xpath(".//label[text()='Country of residence']/parent::*//input");
     private final By COUNTRY_AUSTRIA = By.xpath(".//div[@title = 'Austria']");
     private final By EMAIL = By.xpath(".//input[@type = 'email']");
@@ -27,6 +31,16 @@ public class CompanyRegistrationTest {
     private final By CREATE_ACCOUNT_BTN = By.xpath(".//button[@type = 'submit']");
 
     private final String NAME_PREFIX = "Test-";
+
+    private WebElement waitForAnyVisible(WebDriver browser, WebDriverWait wait, By... candidates) {
+        for (By locator : candidates) {
+            try {
+                return wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
+            } catch (Exception ignored) {
+            }
+        }
+        throw new NoSuchElementException("None of the candidate locators were visible");
+    }
 
 
     @Test
@@ -40,25 +54,44 @@ public class CompanyRegistrationTest {
             // Open Company Registration page
             browser.get("https://nectaro.eu/registration/company/?hl=en");
 
-            // Accept cookies if shown
+            // Accept cookies if shown (handle possible iframe)
             try {
                 WebDriverWait waitCookies = new WebDriverWait(browser, Duration.ofSeconds(10));
-                waitCookies.until(ExpectedConditions.elementToBeClickable(ACCEPT_COOKIES_BTN));
-                browser.findElement(ACCEPT_COOKIES_BTN).click();
+                // Some deployments show the cookie banner inside an iframe
+                int frames = browser.findElements(By.cssSelector("iframe")).size();
+                for (int i = 0; i < frames; i++) {
+                    browser.switchTo().frame(i);
+                    if (!browser.findElements(ACCEPT_COOKIES_BTN).isEmpty()) {
+                        browser.findElement(ACCEPT_COOKIES_BTN).click();
+                        browser.switchTo().defaultContent();
+                        break;
+                    }
+                    browser.switchTo().defaultContent();
+                }
+                if (browser.findElements(ACCEPT_COOKIES_BTN).size() > 0) {
+                    waitCookies.until(ExpectedConditions.elementToBeClickable(ACCEPT_COOKIES_BTN));
+                    browser.findElement(ACCEPT_COOKIES_BTN).click();
+                }
             } catch (Exception ignored) {
             }
 
             WebDriverWait wait = new WebDriverWait(browser, Duration.ofSeconds(30));
 
+            // Ensure page fully loaded
+            ((JavascriptExecutor) browser).executeScript("return document.readyState").equals("complete");
+
             // Company name
-            wait.until(ExpectedConditions.visibilityOfElementLocated(COMPANY_NAME));
-            browser.findElement(COMPANY_NAME).click();
-            browser.findElement(COMPANY_NAME).sendKeys(String.format("%s%s", NAME_PREFIX, "Company"));
+            WebElement companyNameInput = waitForAnyVisible(browser, wait, COMPANY_NAME,
+                    By.xpath("//input[@name='companyName' or @name='company_name' or contains(translate(@placeholder,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'company name') or contains(translate(@aria-label,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'company name') or contains(translate(@id,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'company')]")
+            );
+            companyNameInput.click();
+            companyNameInput.sendKeys(String.format("%s%s", NAME_PREFIX, "Company"));
 
             // First and Last name
-            wait.until(ExpectedConditions.visibilityOfElementLocated(FIRST_NAME));
-            browser.findElement(FIRST_NAME).sendKeys(String.format("%s%s", NAME_PREFIX, "Auto"));
-            browser.findElement(LAST_NAME).sendKeys("Test-Auto");
+            WebElement firstNameInput = waitForAnyVisible(browser, wait, FIRST_NAME, FIRST_NAME_ATTRS);
+            firstNameInput.sendKeys(String.format("%s%s", NAME_PREFIX, "Auto"));
+            WebElement lastNameInput = waitForAnyVisible(browser, wait, LAST_NAME, LAST_NAME_ATTRS);
+            lastNameInput.sendKeys("Test-Auto");
 
             // Country of residence
             wait.until(ExpectedConditions.elementToBeClickable(COUNTRY_OF_RESIDENCE));

@@ -115,23 +115,35 @@ public class CompanyRegistrationTest {
             // Checkboxes may be below the fold
             Actions scroller = new Actions(browser);
 
-            WebElement marketingCheckbox = browser.findElement(MARKETING_CHECKBOX);
-            scroller.scrollToElement(marketingCheckbox).perform();
-            try {
-                marketingCheckbox.click(); // click label to toggle underlying input
-            } catch (Exception e) {
-                // Sometimes the label span is not directly clickable; click the nearest input instead
-                marketingCheckbox.findElement(By.xpath(".//preceding::input[@type='checkbox'][1] | .//input[@type='checkbox']"))
-                        .click();
+            WebElement marketingLabel = browser.findElement(MARKETING_CHECKBOX);
+            scroller.scrollToElement(marketingLabel).perform();
+            String marketingFor = marketingLabel.getAttribute("for");
+            if (marketingFor != null && !marketingFor.isEmpty()) {
+                WebElement marketingInput = browser.findElement(By.id(marketingFor));
+                if (!marketingInput.isSelected()) {
+                    marketingInput.click();
+                }
+            } else {
+                // Fallback: find the checkbox input adjacent to the label
+                WebElement marketingInput = marketingLabel.findElement(By.xpath("preceding-sibling::div[contains(@class,'v-input--selection-controls__input')]/input[@type='checkbox']"));
+                if (!marketingInput.isSelected()) {
+                    marketingInput.click();
+                }
             }
 
-            WebElement policyCheckbox = browser.findElement(POLICY_CHECKBOX);
-            scroller.scrollToElement(policyCheckbox).perform();
-            try {
-                policyCheckbox.click();
-            } catch (Exception e) {
-                policyCheckbox.findElement(By.xpath(".//preceding::input[@type='checkbox'][1] | .//input[@type='checkbox']"))
-                        .click();
+            WebElement policyLabel = browser.findElement(POLICY_CHECKBOX);
+            scroller.scrollToElement(policyLabel).perform();
+            String policyFor = policyLabel.getAttribute("for");
+            if (policyFor != null && !policyFor.isEmpty()) {
+                WebElement policyInput = browser.findElement(By.id(policyFor));
+                if (!policyInput.isSelected()) {
+                    policyInput.click();
+                }
+            } else {
+                WebElement policyInput = policyLabel.findElement(By.xpath("preceding-sibling::div[contains(@class,'v-input--selection-controls__input')]/input[@type='checkbox']"));
+                if (!policyInput.isSelected()) {
+                    policyInput.click();
+                }
             }
 
             // Submit
